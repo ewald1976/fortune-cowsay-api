@@ -1,0 +1,57 @@
+openapi: 3.0.3
+info:
+  title: Fortune & Cowsay API
+  version: 1.0.0
+  description: API für deutsche Fortune- und Cowsay-Zitate.
+servers:
+  - url: http://localhost:8080
+paths:
+  /api/quote:
+    post:
+      summary: Gibt ein Zitat oder Cowsay aus.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                mode:
+                  type: string
+                  enum: [fortunes, cowsay]
+                cat:
+                  type: string
+      responses:
+        "200":
+          description: Erfolgreiche Antwort
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  data:
+                    type: object
+                    properties:
+                      type: { type: string }
+                      category: { type: string }
+                      output: { type: string }
+  /api/categories:
+    get:
+      summary: Listet verfügbare Kategorien.
+      responses:
+        "200":
+          description: Erfolgreiche Antwort
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  data:
+                    type: object
+                    properties:
+                      count: { type: integer }
+                      categories:
+                        type: array
+                        items: { type: string }

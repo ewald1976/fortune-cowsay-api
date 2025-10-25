@@ -1,0 +1,75 @@
+name: CI – Build & Test Lumen Fortune API
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 🧱 Repository auschecken
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 🐳 Docker-Setup
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # 🔨 Build Docker-Image
+      - name: Build image
+        run: docker build -t fortune-cowsay-api:latest .
+
+      # 🚀 Start Container im Hintergrund
+      - name: Run container
+        run: docker run -d -p 8080:8080 --name fortune-api fortune-cowsay-api:latest
+
+      # 🕐 Warten bis der Server läuft
+      - name: Wait for container
+        run: |
+          for i in {1..10}; do
+            if curl -s http://localhost:8080 > /dev/null; then
+              echo "Container ready"
+              exit 0
+            fi
+            echo "Waiting..."
+            sleep 3
+          done
+          echo "Container did not start in time"
+          exit 1
+
+      # ✅ Test API Endpoint
+      - name: Test fortune endpoint
+        run: |
+          curl -s http://localhost:8080/api/fortune | grep -q '"type":"fortune"' && echo "✅ OK" || (echo "❌ Test failed" && exit 1)
+
+      # 🧹 Stop + Cleanup
+      - name: Stop container
+        if: always()
+        run: docker rm -f fortune-api || true
+
+  # optional: Push zu GitHub Container Registry (ghcr.io)
+  push-image:
+    needs: build-test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          push: true
+          tags: ghcr.io/${{ github.repository }}:latest
+
