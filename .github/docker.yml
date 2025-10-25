@@ -1,87 +1,91 @@
-name: Build, Test & Publish Docker Image
+name: 🐳 Build, Test & Publish Fortune-Cowsay-API
 
 on:
   push:
-    branches: [ "main" ]
-    tags:
-      - 'v*'      # 👈 reagiert auf Tags wie v1.0.0
+    branches: [ main ]
+    tags: [ 'v*' ]
   pull_request:
 
 jobs:
   build-and-test:
+    name: 🧱 Build & Test
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout repository
+      - name: Checkout code
         uses: actions/checkout@v4
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Build Docker image (no push yet)
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: ./Dockerfile
-          platforms: linux/amd64,linux/arm64
-          load: true     # lädt lokal statt push
-          tags: fortune-cowsay-api:test
+      - name: Build test image
+        run: docker build -t fortune-cowsay-api:test .
 
-      - name: Run container for tests
+      - name: Run container & healthcheck
         run: |
           docker run -d --rm -p 8080:8080 --name fortune-api-test fortune-cowsay-api:test
-          echo "Waiting for container to start..."
+          echo "Waiting for API..."
           for i in {1..10}; do
             if curl -fs http://localhost:8080/api/health >/dev/null 2>&1; then
-              echo "✅ API is healthy!"
+              echo "✅ API healthy!"
+              docker rm -f fortune-api-test >/dev/null 2>&1 || true
               exit 0
             fi
             sleep 3
           done
-          echo "❌ API healthcheck failed" && docker logs fortune-api-test && exit 1
+          echo "❌ API healthcheck failed"
+          docker logs fortune-api-test || true
+          docker rm -f fortune-api-test >/dev/null 2>&1 || true
+          exit 1
 
-      - name: Stop test container
-        if: always()
-        run: docker stop fortune-api-test || true
-
-  push-to-dockerhub:
-    needs: build-and-test
+  multiarch-push:
+    name: 🚀 Build & Push (multi-arch)
+    needs: [build-and-test]
     runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/')
+
     steps:
-      - name: Checkout repository
+      - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up Docker Buildx
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Login to Docker Hub
+      - name: Log in to Docker Hub
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-            - name: Build and push image
-        uses: docker/build-push-action@v6
+      - name: Build and push multi-arch image
+        uses: docker/build-push-action@v5
         with:
           context: .
-          file: ./Dockerfile
           push: true
           platforms: linux/amd64,linux/arm64
           tags: |
-            ${{ secrets.DOCKERHUB_USERNAME }}/fortune-cowsay-api:latest
-            ${{ secrets.DOCKERHUB_USERNAME }}/fortune-cowsay-api:${{ github.ref_name }}
+            ewald1976/fortune-cowsay-api:latest
+            ewald1976/fortune-cowsay-api:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
-  release:
-    needs: push-to-dockerhub
+  update-dockerhub-readme:
+    name: 🐮 Update DockerHub Overview
+    needs: [multiarch-push]
     runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/')
+    if: github.ref == 'refs/heads/main'
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@v1
+      - name: Sync README to DockerHub
+        uses: peter-evans/dockerhub-description@v3
         with:
-          generate_release_notes: true
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          repository: ewald1976/fortune-cowsay-api
+          readme-filepath: ./README.md
