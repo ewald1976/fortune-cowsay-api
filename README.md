@@ -191,7 +191,7 @@ MIT License © 2025 Elmar Leirich
 
 ## 🧑‍🚀 Autor
 
-**Elmar Leirich**  
+**ewald1976**  
 [GitHub Profile](https://github.com/ewald1976)  
 🐙 [Docker Hub Repository](https://hub.docker.com/r/ewald1976/fortune-cowsay-api)
 
