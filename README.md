@@ -23,12 +23,6 @@ ideal für Home Assistant, Bots oder einfach als tägliche Portion Nerd-Humor �
 ### Direkt per Docker
 
 ```bash
-docker run -d -p 8080:8080 ghcr.io/ewald1976/fortune-cowsay-api:latest
-```
-
-Oder alternativ von Docker Hub:
-
-```bash
 docker run -d -p 8080:8080 ewald1976/fortune-cowsay-api:latest
 ```
 
@@ -62,6 +56,38 @@ curl -X POST http://localhost:8080/api/quote   -H "Content-Type: application/jso
 
 ---
 
+## 💾 Beispiel: JSON POST (z. B. für Postman)
+
+Ein einfacher Request, um ein `fortune`-Zitat zu erhalten:
+
+```json
+POST http://localhost:8080/api/quote
+Content-Type: application/json
+
+{
+  "mode": "fortunes",
+  "cat": "zitate"
+}
+```
+
+**Antwort:**
+
+```json
+{
+  "success": true,
+  "timestamp": "2025-10-25T19:50:44+0000",
+  "data": {
+    "type": "fortunes",
+    "category": "de/zitate",
+    "output": "Es ist am Ende der Religion das beste, daß sie Ketzer hervorruft. — Christian Friedrich Hebbel"
+  }
+}
+```
+
+Tipp: In **Postman** einfach unter „Body → raw → JSON“ einfügen.
+
+---
+
 ## 🩺 Health-Check
 
 ```bash
@@ -73,6 +99,41 @@ Antwort:
 ```json
 {"status":"ok","fortune":"available","cowsay":"available"}
 ```
+
+---
+
+## 🧱 Beispiel docker-compose.yml
+
+Damit kannst du das API-Projekt einfach starten und dauerhaft laufen lassen:
+
+```yaml
+version: "3.9"
+
+services:
+  fortune-cowsay-api:
+    image: ewald1976/fortune-cowsay-api:latest
+    container_name: fortune-cowsay-api
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      - LANG=de_DE.UTF-8
+      - TZ=Europe/Berlin
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+```
+
+Dann einfach starten mit:
+
+```bash
+docker compose up -d
+```
+
+und öffnen unter  
+👉 `http://localhost:8080/api/quote`
 
 ---
 
@@ -96,7 +157,7 @@ Die API ist danach erreichbar unter
 - **Nginx 1.24 + Supervisor 4.3**  
 - **fortune-mod / cowsay**  
 - **Swagger UI** (optional)  
-- **GitHub Actions** für Build & Tests & Release  
+- **GitHub Actions** für Build, Tests und Release  
 
 ---
 
@@ -122,33 +183,15 @@ Automatisiert via **GitHub Actions**:
 
 ---
 
-## 📖 Beispiel: Nutzung in Home Assistant
-
-Du kannst die API z. B. mit einem REST-Sensor einbinden:
-
-```yaml
-sensor:
-  - platform: rest
-    name: "Cowsay Zitat"
-    resource: http://localhost:8080/api/quote
-    method: POST
-    headers:
-      Content-Type: application/json
-    payload: '{"mode":"fortunes"}'
-    value_template: "{{ value_json.data.output }}"
-```
-
----
-
 ## 📜 Lizenz
 
-MIT License © 2025 ewald1976
+MIT License © 2025 Elmar Leirich
 
 ---
 
 ## 🧑‍🚀 Autor
 
-**Ewald1976**  
+**Elmar Leirich**  
 [GitHub Profile](https://github.com/ewald1976)  
 🐙 [Docker Hub Repository](https://hub.docker.com/r/ewald1976/fortune-cowsay-api)
 
