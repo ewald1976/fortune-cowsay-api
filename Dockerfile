@@ -1,38 +1,46 @@
-# ---------- Stage 1: PHP-FPM ----------
-FROM php:8.3-fpm-bullseye AS php-fpm
+# ---------- Stage 1: Build PHP/Lumen ----------
+FROM php:8.3-fpm-trixie AS php-fpm
 
-# Verhindert Mac FS-Cache Bugs
-ENV COMPOSER_ALLOW_SUPERUSER=1
+# Systempakete + Entwickler-Tools
+RUN apt-get update && apt-get install -y \
+    git bash curl locales \
+    fortune-mod cowsay \
+    && rm -rf /var/lib/apt/lists/*
 
-RUN apt-get update && \
-    apt-get install -y cowsay fortune-mod fortunes-de locales && \
-    echo "de_DE.UTF-8 UTF-8" > /etc/locale.gen && \
-    locale-gen && \
-    update-locale LANG=de_DE.UTF-8 && \
-    ln -s /usr/games/fortune /usr/local/bin/fortune && \
-    ln -s /usr/games/cowsay /usr/local/bin/cowsay && \
-    rm -rf /var/lib/apt/lists/*
-
-ENV LANG=de_DE.UTF-8
-ENV LC_ALL=de_DE.UTF-8
+# UTF-8 aktivieren
+RUN sed -i '/de_DE.UTF-8/s/^# //g' /etc/locale.gen && locale-gen
+ENV LANG=de_DE.UTF-8 LANGUAGE=de_DE.UTF-8 LC_ALL=de_DE.UTF-8
 
 WORKDIR /var/www/html
 COPY ./lumen-app/ .
-# Swagger/OpenAPI statisch einbinden
+
+# Swagger / OpenAPI
 COPY openapi.yaml /var/www/html/public/openapi.yaml
 COPY swagger/index.html /var/www/html/public/docs/index.html
 
-RUN chown -R www-data:www-data /var/www/html
 
-# ---------- Stage 2: Nginx ----------
-FROM nginx:1.27-alpine AS nginx
+# ---------- Stage 2: Final Image ----------
+FROM php:8.3-fpm-trixie
 
-# Nginx Konfiguration
-COPY nginx/default.conf /etc/nginx/conf.d/default.conf
+# Nginx + Supervisor + Tools
+RUN apt-get update && apt-get install -y \
+    nginx supervisor bash curl \
+    fortune-mod cowsay \
+    && rm -rf /var/lib/apt/lists/*
 
-# Lumen-App aus Stage 1 übernehmen
+# ⬇️ PATH fix
+ENV PATH="/usr/games:${PATH}"
+
+# Verzeichnisse
+RUN mkdir -p /run/nginx /var/log/supervisor /var/www/html
+
+# App übernehmen
 COPY --from=php-fpm /var/www/html /var/www/html
 
+# Nginx & Supervisor-Konfiguration
+COPY nginx/default.conf /etc/nginx/conf.d/default.conf
+COPY nginx/supervisord.conf /etc/supervisor/supervisord.conf
+
 EXPOSE 8080
-CMD ["nginx", "-g", "daemon off;"]
+CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/supervisord.conf"]
 
