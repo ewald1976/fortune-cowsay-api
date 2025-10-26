@@ -1,7 +1,7 @@
 # ---------- Stage 1: Build PHP/Lumen ----------
 FROM php:8.3-fpm-trixie AS php-fpm
 
-# Systempakete + Entwickler-Tools
+# Systempakete + Tools
 RUN apt-get update && apt-get install -y \
     git bash curl locales \
     fortune-mod cowsay \
@@ -19,7 +19,7 @@ COPY openapi.yaml /var/www/html/public/openapi.yaml
 COPY swagger/index.html /var/www/html/public/docs/index.html
 
 
-# ---------- Stage 2: Final Image ----------
+# ---------- Stage 2A: NGINX + PHP-FPM ----------
 FROM php:8.3-fpm-trixie AS nginx
 
 # Nginx + Supervisor + Tools
@@ -28,7 +28,6 @@ RUN apt-get update && apt-get install -y \
     fortune-mod cowsay \
     && rm -rf /var/lib/apt/lists/*
 
-# ⬇️ PATH fix
 ENV PATH="/usr/games:${PATH}"
 
 # Verzeichnisse
@@ -37,10 +36,17 @@ RUN mkdir -p /run/nginx /var/log/supervisor /var/www/html
 # App übernehmen
 COPY --from=php-fpm /var/www/html /var/www/html
 
-# Nginx & Supervisor-Konfiguration
+# Konfigurationen
 COPY nginx/default.conf /etc/nginx/conf.d/default.conf
 COPY nginx/supervisord.conf /etc/supervisor/supervisord.conf
 
 EXPOSE 8080
 CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/supervisord.conf"]
 
+
+# ---------- Stage 2B: PHP Built-in Webserver (DEV MODE) ----------
+FROM php-fpm AS simple
+
+WORKDIR /var/www/html
+EXPOSE 8080
+CMD ["php", "-S", "0.0.0.0:8080", "-t", "public"]
