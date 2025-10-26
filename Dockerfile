@@ -20,7 +20,7 @@ COPY swagger/index.html /var/www/html/public/docs/index.html
 
 
 # ---------- Stage 2: Final Image ----------
-FROM php:8.3-fpm-trixie
+FROM php:8.3-fpm-trixie AS nginx
 
 # Nginx + Supervisor + Tools
 RUN apt-get update && apt-get install -y \
