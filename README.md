@@ -5,66 +5,62 @@
 
 ---
 
-## 🚀 Schnellstart (Docker)
+## 🚀 Schnellstart (Docker Compose)
 
-```
+```bash
 # Repository klonen
 git clone https://github.com/ewald1976/fortune-cowsay-api.git
 cd fortune-cowsay-api
 
-# Docker-Container bauen und starten
+# Container bauen und starten
 docker compose up -d
 ```
 
-Nach dem Start ist die API erreichbar unter
-**[http://localhost:8080/api/quote](http://localhost:8080/api/quote)**
+Nach dem Start ist die API erreichbar unter:
+👉 **[http://localhost:8080/api/quote](http://localhost:8080/api/quote)**
 
 ---
 
 ## 🧠 API-Endpunkte
 
-### GET /api/health
+### `/api/health`
 
 Health-Check für Docker.
 
 **Antwort:**
 
-```
+```json
 { "success": true, "timestamp": "2025-10-29T12:00:00+0000" }
 ```
 
----
-
-### GET /api/categories
+### `/api/categories`
 
 Listet alle verfügbaren Fortune-Datenbanken.
 
 **Beispiel:**
 
-```
+```bash
 curl http://localhost:8080/api/categories | jq .
 ```
 
----
-
-### POST /api/quote
+### `/api/quote`
 
 Erzeugt ein zufälliges Zitat oder eine sprechende Kuh.
 
-**Request Body (JSON):**
+**POST-Body (optional):**
 
-```
+```json
 {
   "mode": "cowsay",     // oder "fortunes"
-  "cat": "literature",  // optional, für Fortune
-  "cow": "tux",         // optional, für Cowsay
+  "cat": "literature",  // optional, nur für Fortune
+  "cow": "tux",         // optional, nur für Cowsay
   "text": "Hallo Welt"  // optional, eigener Text für Cowsay
 }
 ```
 
 **Antwort:**
 
-```
+```json
 {
   "success": true,
   "data": {
@@ -75,15 +71,15 @@ Erzeugt ein zufälliges Zitat oder eine sprechende Kuh.
 }
 ```
 
-Wenn keine Parameter angegeben werden, liefert die API standardmäßig eine zufällige Kuh oder Fortune (50/50).
+Wenn keine Parameter angegeben werden, liefert die API standardmäßig eine zufällige Auswahl (50/50 Fortune/Cowsay).
 
 ---
 
-## 🖊️ Beispiel-Aufrufe
+## 🧪 Beispiel-Aufrufe
 
 ### cURL
 
-```
+```bash
 curl -X POST http://localhost:8080/api/quote \
   -H 'Content-Type: application/json' \
   -d '{"mode": "fortunes", "cat": "literature"}' | jq .
@@ -92,59 +88,42 @@ curl -X POST http://localhost:8080/api/quote \
 ### Postman
 
 1. POST Request auf `http://localhost:8080/api/quote`
-2. Body -> raw -> JSON:
+2. Body → raw → JSON:
 
-   ```
+   ```json
    { "mode": "cowsay", "text": "Moo!" }
    ```
-3. Response zeigt ASCII-Ausgabe oder Fortune-Zitat.
+3. Antwort zeigt ASCII-Ausgabe oder Fortune-Zitat.
 
 ---
 
-## 🔹 Swagger UI
+## 🔍 Swagger UI
 
 Swagger ist automatisch enthalten und erreichbar unter:
-
-**[http://localhost:8080/docs/](http://localhost:8080/docs/)**
-
-Die Datei liegt im Container unter:
-
-```
-/var/www/html/public/docs/index.html
-```
-
-und verwendet die Definition:
-
-```
-/var/www/html/public/openapi.yaml
-```
+👉 **[http://localhost:8080/docs/](http://localhost:8080/docs/)**
 
 ---
 
-## 🔗 Example UI (Samples)
+## 💻 Beispiel-UI (Samples)
 
-Im Ordner `samples/` befindet sich eine statische Demo-UI im CRT-Stil.
+Im Ordner `samples/` befindet sich eine statische Retro-Demo im CRT-Stil.
 
 **Starten (lokal):**
 
-```
+```bash
 cd samples
 python3 -m http.server 8081
 ```
 
-Dann im Browser:
-[http://localhost:8081](http://localhost:8081)
+Dann im Browser: [http://localhost:8081](http://localhost:8081)
 
-Oder direkt aus Docker heraus (siehe unten Nginx-Beispiel).
+Oder direkt im Docker-Nginx per Beispiel-Konfiguration:
 
 ---
 
-## 🔧 Beispiel-Nginx-Konfiguration
+## ⚙️ Beispiel-Nginx-Konfiguration
 
-Wenn du die Retro-UI automatisch ausliefern willst (z. B. unter `meinekuh.domain.de`),
-lege diese Config-Datei im Projekt ab:
-
-```
+```nginx
 server {
     listen 80;
     server_name meinekuh.domain.de;
@@ -153,7 +132,7 @@ server {
     index index.html;
 
     location /api/ {
-        proxy_pass http://fortune-cowsay-api-php-fpm:8080/;
+        proxy_pass http://fortune-cowsay-api:8080/;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
     }
@@ -164,24 +143,20 @@ server {
 }
 ```
 
-Diese Datei kann in das Image kopiert werden, oder du nutzt sie über eine angepasste `nginx.conf` in deinem Compose-Setup.
-
 ---
 
-## 🌐 Public Deploy Hinweis
+## 🌐 Public Deployment
 
-Der API-Container kann direkt in jede Infrastruktur deployed werden (Docker, Podman, Kubernetes, etc.).
+Der Container läuft eigenständig mit PHP-FPM + Nginx.
+Deploy auf jedem Server mit Docker:
 
-Statische Dateien (z. B. `samples/index.html`) können separat als Website ausgeliefert oder über denselben Nginx-Container integriert werden.
-
-Beispiel:
-
-```
-docker build -t fortune-cowsay-api .
-docker run -d -p 8080:8080 fortune-cowsay-api
+```bash
+docker compose pull
+docker compose up -d --build
 ```
 
-Dann im Browser: [http://localhost:8080/docs/](http://localhost:8080/docs/)
+Dann im Browser öffnen:
+👉 [http://localhost:8080/docs/](http://localhost:8080/docs/)
 
 ---
 
@@ -192,8 +167,9 @@ Dann im Browser: [http://localhost:8080/docs/](http://localhost:8080/docs/)
 * Deutsche Zitate aus diversen Open-Fortune-Repositories
 
 Lizenz: MIT
-Autor: Ewald & Data (2025)
+Autor: Elmar & Data (2025)
 
 ---
 
-> „Moo or not to moo – that is the question.“  — Cowspeare
+> „Moo or not to moo – that is the question.“
+> — Cowspeare

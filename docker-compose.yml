@@ -1,25 +1,24 @@
-version: "3.9"
-
 services:
-  php-fpm:
+  fortune-cowsay-api:
     build:
       context: .
       dockerfile: Dockerfile
-      target: php-fpm
-    volumes:
-      - ./lumen-app:/var/www/html
-
-  nginx:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      target: nginx
+    container_name: fortune-cowsay-api
     ports:
       - "8080:8080"
-    depends_on:
-      - php-fpm
+    environment:
+      - APP_ENV=production
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/api/health"]
+      test: ["CMD", "curl", "-f", "http://127.0.0.1:8080/api/health"]
       interval: 30s
       timeout: 5s
       retries: 3
+    restart: unless-stopped
+
+    # Optional: lokales Mounting für Entwicklung
+    # volumes:
+    #   - ./lumen-app:/var/www/html
+
+networks:
+  default:
+    name: fortune-cowsay-network
