@@ -3,8 +3,8 @@ FROM php:8.3-fpm-trixie AS php-fpm
 
 # Systempakete + Tools
 RUN apt-get update && apt-get install -y \
-    git bash curl locales \
-    fortune-mod cowsay \
+    git bash curl locales nginx supervisor \
+    fortune-mod cowsay fortunes-de fortunes-debian-hints \
     && rm -rf /var/lib/apt/lists/*
 
 # UTF-8 aktivieren
@@ -20,33 +20,35 @@ COPY swagger/index.html /var/www/html/public/docs/index.html
 
 
 # ---------- Stage 2A: NGINX + PHP-FPM ----------
-FROM php:8.3-fpm-trixie AS nginx
+FROM php-fpm AS nginx
 
-# Nginx + Supervisor + Tools
 RUN apt-get update && apt-get install -y \
     nginx supervisor bash curl \
-    fortune-mod cowsay \
+    fortune-mod cowsay fortunes-de fortunes-debian-hints \
     && rm -rf /var/lib/apt/lists/*
 
 ENV PATH="/usr/games:${PATH}"
 
-# Verzeichnisse
+RUN echo 'env[PATH] = /usr/games:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin' \
+    >> /usr/local/etc/php-fpm.d/www.conf
+
 RUN mkdir -p /run/nginx /var/log/supervisor /var/www/html
 
-# App übernehmen
 COPY --from=php-fpm /var/www/html /var/www/html
-
-# Konfigurationen
 COPY nginx/default.conf /etc/nginx/conf.d/default.conf
 COPY nginx/supervisord.conf /etc/supervisor/supervisord.conf
+# ---------- Fortunes einbinden ----------
+# Kopiert alle lokalen Fortune-Dateien (englisch & deutsch)
+COPY docker/fortunes /usr/share/games/fortunes
+
+# Erzeuge .dat-Dateien für fortune (Index)
+# -> strfile erzeugt für jede Textdatei eine Indexdatei, die fortune benötigt
+RUN find /usr/share/games/fortunes \
+    -type f ! -name "*.dat" ! -name "*.u8" \
+    -exec strfile {} \; \
+    && ls -1 /usr/share/games/fortunes | wc -l \
+    && echo "✅ Fortunes wurden erfolgreich indiziert."
+
 
 EXPOSE 8080
 CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/supervisord.conf"]
-
-
-# ---------- Stage 2B: PHP Built-in Webserver (DEV MODE) ----------
-FROM php-fpm AS simple
-
-WORKDIR /var/www/html
-EXPOSE 8080
-CMD ["php", "-S", "0.0.0.0:8080", "-t", "public"]

@@ -1,199 +1,199 @@
-# 🐮 Fortune Cowsay API
+# 🐮 Fortune Cowsay API & UI
 
-Eine charmante kleine REST-API auf Basis von **Lumen + PHP 8.3** unter **Debian 13 (Trixie)**.  
-Sie liefert wahlweise klassische `fortune`-Zitate oder `cowsay`-Ausgaben im JSON-Format —  
-ideal für Home Assistant, Bots oder einfach als tägliche Portion Nerd-Humor 😄
-
----
-
-## 🚀 Features
-
-- 🐄 **/api/quote** – gibt zufällige Cowsay- oder Fortune-Texte als JSON zurück  
-- 📜 **/api/categories** – listet verfügbare Fortune-Datenbanken auf  
-- ❤️ **/api/health** – Health-Check-Endpoint  
-- 🌍 Deutsche und englische Fortune-Sammlungen (Debian-Pakete)  
-- 🧩 Sauber gekapselt in einem Docker-Container mit Nginx + PHP-FPM + Supervisor  
-- 🔧 Multi-Arch-Builds (amd64 & arm64)  
-- 🧠 Optionale Swagger-UI unter `/docs`  
+> Eine kleine, containerisierte REST-API mit integriertem *Cowsay*- und *Fortune*-Generator
+> plus optionaler Retro-UI im Bernstein-Look.
 
 ---
 
-## 🧰 Verwendung
+## 🚀 Schnellstart (Docker)
 
-### Direkt per Docker
+```
+# Repository klonen
+git clone https://github.com/<dein-repo>/fortune-cowsay-api.git
+cd fortune-cowsay-api
 
-```bash
-docker run -d -p 8080:8080 ewald1976/fortune-cowsay-api:latest
+# Docker-Container bauen und starten
+docker compose up -d
 ```
 
-Dann:
+Nach dem Start ist die API erreichbar unter
+**[http://localhost:8080/api/quote](http://localhost:8080/api/quote)**
 
-```bash
-curl -X POST http://localhost:8080/api/quote   -H "Content-Type: application/json"   -d '{"mode":"cowsay"}'
+---
+
+## 🧠 API-Endpunkte
+
+### GET /api/health
+
+Health-Check für Docker.
+
+**Antwort:**
+
+```
+{ "success": true, "timestamp": "2025-10-29T12:00:00+0000" }
 ```
 
-### Beispiel-Antwort
+---
 
-```json
+### GET /api/categories
+
+Listet alle verfügbaren Fortune-Datenbanken.
+
+**Beispiel:**
+
+```
+curl http://localhost:8080/api/categories | jq .
+```
+
+---
+
+### POST /api/quote
+
+Erzeugt ein zufälliges Zitat oder eine sprechende Kuh.
+
+**Request Body (JSON):**
+
+```
 {
-  "success": true,
-  "timestamp": "2025-10-25T18:37:13+0000",
-  "data": {
-    "type": "cowsay",
-    "output": " _______\n< Hallo! >\n -------\n        \\   ^__^\n         \\  (oo)\\_______\n            (__)\\       )\\/\\\n                ||----w |\n                ||     ||"
-  }
-}
-```
-
----
-
-## 🧩 API Parameter
-
-| Parameter | Typ | Beschreibung | Standard |
-|------------|------|--------------|-----------|
-| `mode` | `string` | `"fortunes"` oder `"cowsay"` | `"cowsay"` |
-| `cat` | `string` | Kategorie der Fortune-Dateien (z. B. `zitate`, `sprichworte`) | zufällig |
-
----
-
-## 💾 Beispiel: JSON POST (z. B. für Postman)
-
-Ein einfacher Request, um ein `fortune`-Zitat zu erhalten:
-
-```json
-POST http://localhost:8080/api/quote
-Content-Type: application/json
-
-{
-  "mode": "fortunes",
-  "cat": "zitate"
+  "mode": "cowsay",     // oder "fortunes"
+  "cat": "literature",  // optional, für Fortune
+  "cow": "tux",         // optional, für Cowsay
+  "text": "Hallo Welt"  // optional, eigener Text für Cowsay
 }
 ```
 
 **Antwort:**
 
-```json
+```
 {
   "success": true,
-  "timestamp": "2025-10-25T19:50:44+0000",
   "data": {
-    "type": "fortunes",
-    "category": "de/zitate",
-    "output": "Es ist am Ende der Religion das beste, daß sie Ketzer hervorruft. — Christian Friedrich Hebbel"
+    "type": "cowsay",
+    "category": "literature",
+    "output": "<ASCII oder Fortune Text>"
   }
 }
 ```
 
-Tipp: In **Postman** einfach unter „Body → raw → JSON“ einfügen.
+Wenn keine Parameter angegeben werden, liefert die API standardmäßig eine zufällige Kuh oder Fortune (50/50).
 
 ---
 
-## 🩺 Health-Check
+## 🖊️ Beispiel-Aufrufe
 
-```bash
-curl http://localhost:8080/api/health
+### cURL
+
+```
+curl -X POST http://localhost:8080/api/quote \
+  -H 'Content-Type: application/json' \
+  -d '{"mode": "fortunes", "cat": "literature"}' | jq .
 ```
 
-Antwort:
+### Postman
 
-```json
-{"status":"ok","fortune":"available","cowsay":"available"}
+1. POST Request auf `http://localhost:8080/api/quote`
+2. Body -> raw -> JSON:
+
+   ```
+   { "mode": "cowsay", "text": "Moo!" }
+   ```
+3. Response zeigt ASCII-Ausgabe oder Fortune-Zitat.
+
+---
+
+## 🔹 Swagger UI
+
+Swagger ist automatisch enthalten und erreichbar unter:
+
+**[http://localhost:8080/docs/](http://localhost:8080/docs/)**
+
+Die Datei liegt im Container unter:
+
+```
+/var/www/html/public/docs/index.html
+```
+
+und verwendet die Definition:
+
+```
+/var/www/html/public/openapi.yaml
 ```
 
 ---
 
-## 🧱 Beispiel docker-compose.yml
+## 🔗 Example UI (Samples)
 
-Damit kannst du das API-Projekt einfach starten und dauerhaft laufen lassen:
+Im Ordner `samples/` befindet sich eine statische Demo-UI im CRT-Stil.
 
-```yaml
-version: "3.9"
+**Starten (lokal):**
 
-services:
-  fortune-cowsay-api:
-    image: ewald1976/fortune-cowsay-api:latest
-    container_name: fortune-cowsay-api
-    restart: unless-stopped
-    ports:
-      - "8080:8080"
-    environment:
-      - LANG=de_DE.UTF-8
-      - TZ=Europe/Berlin
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/api/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
+```
+cd samples
+python3 -m http.server 8081
 ```
 
-Dann einfach starten mit:
+Dann im Browser:
+[http://localhost:8081](http://localhost:8081)
 
-```bash
-docker compose up -d
+Oder direkt aus Docker heraus (siehe unten Nginx-Beispiel).
+
+---
+
+## 🔧 Beispiel-Nginx-Konfiguration
+
+Wenn du die Retro-UI automatisch ausliefern willst (z. B. unter `meinekuh.domain.de`),
+lege diese Config-Datei im Projekt ab:
+
+```
+server {
+    listen 80;
+    server_name meinekuh.domain.de;
+
+    root /var/www/html/samples;
+    index index.html;
+
+    location /api/ {
+        proxy_pass http://fortune-cowsay-api-php-fpm:8080/;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+    }
+
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+}
 ```
 
-und öffnen unter  
-👉 `http://localhost:8080/api/quote`
+Diese Datei kann in das Image kopiert werden, oder du nutzt sie über eine angepasste `nginx.conf` in deinem Compose-Setup.
 
 ---
 
-## 🧑‍💻 Lokales Development
+## 🌐 Public Deploy Hinweis
 
-```bash
-git clone https://github.com/ewald1976/fortune-cowsay-api.git
-cd fortune-cowsay-api
-docker compose up --build
+Der API-Container kann direkt in jede Infrastruktur deployed werden (Docker, Podman, Kubernetes, etc.).
+
+Statische Dateien (z. B. `samples/index.html`) können separat als Website ausgeliefert oder über denselben Nginx-Container integriert werden.
+
+Beispiel:
+
+```
+docker build -t fortune-cowsay-api .
+docker run -d -p 8080:8080 fortune-cowsay-api
 ```
 
-Die API ist danach erreichbar unter  
-👉 `http://localhost:8080`
+Dann im Browser: [http://localhost:8080/docs/](http://localhost:8080/docs/)
 
 ---
 
-## 🧠 Technischer Stack
+## 🎉 Credits & Lizenz
 
-- **Debian 13 (Trixie)** – aktuelles Stable-Release  
-- **PHP 8.3 FPM + Lumen 10**  
-- **Nginx 1.24 + Supervisor 4.3**  
-- **fortune-mod / cowsay**  
-- **Swagger UI** (optional)  
-- **GitHub Actions** für Build, Tests und Release  
+* **Cowsay** by Tony Monroe
+* **Fortune** (GNU BSD fortune-mod)
+* Deutsche Zitate aus diversen Open-Fortune-Repositories
 
----
-
-## 📦 Docker-Tags
-
-| Tag | Architektur | Beschreibung |
-|-----|--------------|--------------|
-| `latest` | amd64 / arm64 | aktueller Stable-Build |
-| `vX.Y.Z` | amd64 / arm64 | versionierter Release |
-| `dev` | amd64 | aktueller Main-Branch-Build |
+Lizenz: MIT
+Autor: Ewald & Data (2025)
 
 ---
 
-## 🔄 CI / CD Pipeline
-
-Automatisiert via **GitHub Actions**:
-
-1. 🧱 Build & Test – Container wird gebaut und Health-Check geprüft  
-2. 🚀 Push – Multi-Arch-Image (amd64 + arm64) wird auf Docker Hub gepusht  
-3. 🐮 Sync – README wird automatisch auf Docker Hub aktualisiert  
-
-**Workflow:** `.github/workflows/docker.yml`
-
----
-
-## 📜 Lizenz
-
-MIT License © 2025 Elmar Leirich
-
----
-
-## 🧑‍🚀 Autor
-
-**ewald1976**  
-[GitHub Profile](https://github.com/ewald1976)  
-🐙 [Docker Hub Repository](https://hub.docker.com/r/ewald1976/fortune-cowsay-api)
-
-> _„Kuh-philosophische Weisheiten aus dem Docker-Universum.“_  
-> — Lt. Cmdr. Data 🖖
+> „Moo or not to moo – that is the question.“  — Cowspeare

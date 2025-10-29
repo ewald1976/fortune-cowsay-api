@@ -25,4 +25,8 @@ $router->get('/api/health', function () {
         'cowsay'  => $cowsay  ? 'available' : 'missing',
         'time'    => date(DATE_ISO8601)
     ]);
+$router->get('/api/categories', 'QuoteController@getCategories');
+$router->get('/api/cows', 'QuoteController@getCows');
+$router->post('/api/quote', 'QuoteController@getQuote');
+
 });

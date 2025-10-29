@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Fortune Cowsay UI 🐮</title>
+  <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+  <link rel="stylesheet" href="https://unpkg.com/@picocss/pico@latest/css/pico.min.css" />
+
+  <style>
+    body {
+      background-color: #000;
+      color: #ffb347;
+      font-family: "Courier New", monospace;
+      text-shadow: 0 0 6px #ffb347;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+    }
+
+    main {
+      background-color: #0c0903;
+      border: 3px solid #ffb347;
+      border-radius: 22px;
+      padding: 6rem 3rem;
+      box-shadow:
+        0 0 80px #ffb34766,
+        inset 0 0 40px #ffb34733;
+      max-width: 1000px;
+      width: 100%;
+    }
+
+    h1 {
+      color: #ffcc66;
+      text-shadow: 0 0 8px #ffcc66;
+      text-align: center;
+      margin-bottom: 1.5rem;
+    }
+
+    .terminal {
+      position: relative;
+      background: radial-gradient(ellipse at center, #0b0a05 0%, #000000 100%);
+      color: #ffb347;
+      border: 2px solid #ffb347;
+      border-radius: 14px;
+      padding: 3.5rem 2rem;
+      height: 500px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      box-shadow:
+        inset 0 0 25px #ffb34733,
+        0 0 30px #ffb34755;
+      scroll-behavior: smooth;
+      transform: perspective(800px) rotateX(2deg);
+    }
+
+    /* CRT Scanlines */
+    .terminal::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: repeating-linear-gradient(
+        to bottom,
+        rgba(255, 179, 71, 0.1) 0px,
+        rgba(255, 179, 71, 0.1) 2px,
+        transparent 2px,
+        transparent 4px
+      );
+      mix-blend-mode: overlay;
+      pointer-events: none;
+    }
+
+    .terminal::-webkit-scrollbar {
+      width: 10px;
+    }
+    .terminal::-webkit-scrollbar-thumb {
+      background-color: #ffb34766;
+      border-radius: 5px;
+    }
+    .terminal::-webkit-scrollbar-thumb:hover {
+      background-color: #ffb347;
+    }
+
+    .controls {
+      display: flex;
+      justify-content: center;
+      gap: 1rem;
+      margin-top: 2rem;
+    }
+
+    button {
+      background-color: #ffb347;
+      color: #1a1205;
+      font-weight: bold;
+      border: none;
+      border-radius: 6px;
+      padding: 0.9rem 1.6rem;
+      box-shadow: 0 0 10px #ffb34780;
+      transition: 0.2s ease-in-out;
+    }
+    button:hover {
+      background-color: #ffd280;
+      box-shadow: 0 0 12px #ffb347cc;
+    }
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .menu-overlay {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: #0c0903;
+      border: 2px solid #ffb347;
+      border-radius: 10px;
+      box-shadow: 0 0 30px #ffb347aa;
+      padding: 2rem;
+      width: 420px;
+      z-index: 10;
+    }
+
+    .menu-overlay h3 {
+      text-align: center;
+      color: #ffcc66;
+      text-shadow: 0 0 8px #ffcc66;
+      margin-bottom: 1rem;
+    }
+
+    select,
+    input {
+      background: #000;
+      color: #ffb347;
+      border: 1px solid #ffb347;
+      border-radius: 6px;
+      width: 100%;
+      padding: 0.5rem;
+    }
+
+    .menu-buttons {
+      display: flex;
+      justify-content: center;
+      gap: 1rem;
+      margin-top: 1.5rem;
+    }
+
+    .menu-buttons button {
+      flex: 1;
+      padding: 0.9rem 1.2rem;
+    }
+
+    .overlay-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(2px);
+      z-index: 5;
+    }
+
+    .toggle-row {
+      text-align: center;
+      margin-bottom: 1rem;
+    }
+
+    label {
+      cursor: pointer;
+      color: #ffcc66;
+      text-shadow: none;
+      font-weight: bold;
+    }
+
+    input[type="checkbox"] {
+      accent-color: #ffb347;
+      transform: scale(1.2);
+      margin-right: 0.5rem;
+    }
+  </style>
+</head>
+
+<body>
+  <main x-data="fortuneApp()" x-init="init()">
+    <h1>🐮 Fortune Cowsay UI</h1>
+
+    <div class="terminal" x-text="output" id="terminal">Starte die Maschine…</div>
+
+    <div class="controls">
+      <button @click="getQuote()" :disabled="loading">💬 Neues Zitat</button>
+      <button @click="clear()">🧹 Löschen</button>
+      <button @click="toggleMenu()">⚙️ Settings</button>
+    </div>
+
+    <!-- Menü -->
+    <template x-if="showMenu">
+      <div>
+        <div class="overlay-backdrop" @click="toggleMenu()"></div>
+        <div class="menu-overlay" @click.stop>
+          <h3>⚙️ Settings</h3>
+
+          <div class="toggle-row">
+            <label>
+              <input type="checkbox" x-model="allRandom" />
+              🌀 Alle (Zufall aus allem)
+            </label>
+          </div>
+
+          <label>Modus</label>
+          <select x-model="mode" :disabled="allRandom">
+            <option value="cowsay">Cowsay</option>
+            <option value="fortunes">Fortune</option>
+          </select>
+
+          <template x-if="mode === 'fortunes'">
+            <div style="margin-top:1rem;">
+              <label>Kategorie</label>
+              <select x-model="category" :disabled="allRandom">
+                <template x-for="cat in categories" :key="cat">
+                  <option x-text="cat"></option>
+                </template>
+              </select>
+            </div>
+          </template>
+
+          <template x-if="mode === 'cowsay'">
+            <div style="margin-top:1rem;">
+              <label>Figur</label>
+              <select x-model="cow" :disabled="allRandom">
+                <template x-for="c in cows" :key="c">
+                  <option x-text="c"></option>
+                </template>
+              </select>
+              <label style="margin-top:0.5rem;">Eigener Text</label>
+              <input
+                type="text"
+                placeholder="Was soll die Kuh sagen?"
+                x-model="customText"
+                :disabled="allRandom"
+              />
+            </div>
+          </template>
+
+          <div class="menu-buttons">
+            <button @click="toggleMenu()">✅ Schließen</button>
+            <button @click="resetSettings()">♻️ Reset</button>
+          </div>
+        </div>
+      </div>
+    </template>
+  </main>
+
+  <script>
+    function fortuneApp() {
+      return {
+        output: "",
+        showMenu: false,
+        mode: "fortunes",
+        category: "",
+        categories: [],
+        cow: "default",
+        cows: [],
+        customText: "",
+        allRandom: true, // 🔸 Standardmäßig Zufall aktiv
+        loading: false,
+
+        init() {
+          const saved = JSON.parse(localStorage.getItem("fortuneSettings") || "{}");
+          if (Object.keys(saved).length) Object.assign(this, saved);
+        },
+
+        saveSettings() {
+          localStorage.setItem(
+            "fortuneSettings",
+            JSON.stringify({
+              mode: this.mode,
+              category: this.category,
+              customText: this.customText,
+              cow: this.cow,
+              allRandom: this.allRandom,
+            })
+          );
+        },
+
+        resetSettings() {
+          localStorage.removeItem("fortuneSettings");
+          Object.assign(this, {
+            mode: "fortunes",
+            category: "",
+            customText: "",
+            cow: "default",
+            allRandom: true,
+          });
+        },
+
+        toggleMenu() {
+          this.showMenu = !this.showMenu;
+          if (!this.showMenu) this.saveSettings();
+          if (this.showMenu) {
+            if (this.categories.length === 0) this.loadCategories();
+            if (this.cows.length === 0) this.loadCows();
+          }
+        },
+
+        async loadCategories() {
+          try {
+            const res = await fetch("http://localhost:8080/api/categories");
+            const data = await res.json();
+            if (data.success) this.categories = data.data.categories;
+          } catch (e) {
+            console.error("Kategorienfehler:", e);
+          }
+        },
+
+        async loadCows() {
+          try {
+            const res = await fetch("http://localhost:8080/api/cows");
+            const data = await res.json();
+            if (data.success) this.cows = data.data.cows;
+          } catch (e) {
+            console.error("Cowfiles Fehler:", e);
+          }
+        },
+
+        async getQuote() {
+          try {
+            this.loading = true;
+            this.saveSettings();
+
+            // Zufallsmodus "Alle"
+            if (this.allRandom) {
+              const randomMode = Math.random() < 0.5 ? "cowsay" : "fortunes";
+              this.mode = randomMode;
+
+              if (randomMode === "cowsay" && this.cows.length > 0) {
+                this.cow = this.cows[Math.floor(Math.random() * this.cows.length)];
+                const texts = [
+                  "Moo?",
+                  "Guten Tag, Mensch!",
+                  "42 ist die Antwort.",
+                  "Ich bin die Matrix-Kuh.",
+                  "Zufall oder Schicksal?",
+                ];
+                this.customText = texts[Math.floor(Math.random() * texts.length)];
+              }
+
+              if (randomMode === "fortunes" && this.categories.length > 0) {
+                this.category = this.categories[
+                  Math.floor(Math.random() * this.categories.length)
+                ];
+                this.customText = "";
+              }
+            }
+
+            const body = { mode: this.mode };
+            if (this.mode === "fortunes" && this.category) body.cat = this.category;
+            if (this.mode === "cowsay") {
+              body.cow = this.cow;
+              if (this.customText) body.text = this.customText;
+            }
+
+            const res = await fetch("http://localhost:8080/api/quote", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(body),
+            });
+            const data = await res.json();
+            this.output = data.data?.output || "⚠️ Keine Ausgabe.";
+
+            this.$nextTick(() => {
+              const term = document.getElementById("terminal");
+              term.scrollTop = term.scrollHeight;
+            });
+          } catch (e) {
+            this.output = `⚠️ Fehler: ${e.message}`;
+          } finally {
+            this.loading = false;
+          }
+        },
+
+        clear() {
+          this.output = "";
+        },
+      };
+    }
+  </script>
+</body>
+</html>
