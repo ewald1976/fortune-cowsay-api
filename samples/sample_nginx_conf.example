@@ -1,26 +1,41 @@
 server {
-    listen 80;
-    server_name meinekuh.domain.de;
+    listen 8080;
+    listen [::]:8080;
+    server_name _;
 
-    # Root zeigt auf das Samples-Verzeichnis (UI)
-    root /var/www/html/samples;
+    root /var/www/html/public;
     index index.html;
 
-    # Weiterleitung aller API-Aufrufe an den internen PHP-FPM Container
+    # --- Retro UI ---
+    # Wenn jemand einfach / aufruft, lade die Retro-Seite aus samples/
+    location = / {
+        try_files /samples/index.html =404;
+    }
+
+    # --- API ---
+    # Lumen-API (alle Routen beginnen mit /api/)
     location /api/ {
-        proxy_pass http://fortune-cowsay-api-php-fpm:8080/;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
+        include fastcgi_params;
+        fastcgi_index index.php;
+        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+        fastcgi_pass 127.0.0.1:9000;
     }
 
-    # Standard-Fallback auf index.html, falls kein Dateitreffer
-    location / {
-        try_files $uri $uri/ /index.html;
+    # --- Swagger Docs ---
+    location /docs/ {
+        alias /var/www/html/public/docs/;
+        index index.html;
     }
 
-    # Optional: einfache Health-Check Route
-    location = /health {
-        return 200 'OK';
-        add_header Content-Type text/plain;
+    # --- Statische Dateien ---
+    location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2)$ {
+        expires 30d;
+        access_log off;
     }
+
+    # --- CORS + Proxy Headers ---
+    add_header Access-Control-Allow-Origin * always;
+    add_header Access-Control-Allow-Methods "GET, POST, OPTIONS" always;
+    add_header Access-Control-Allow-Headers "DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range" always;
+    add_header Access-Control-Expose-Headers "Content-Length,Content-Range" always;
 }
