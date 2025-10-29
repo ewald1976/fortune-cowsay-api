@@ -1,0 +1,26 @@
+server {
+    listen 80;
+    server_name meinekuh.domain.de;
+
+    # Root zeigt auf das Samples-Verzeichnis (UI)
+    root /var/www/html/samples;
+    index index.html;
+
+    # Weiterleitung aller API-Aufrufe an den internen PHP-FPM Container
+    location /api/ {
+        proxy_pass http://fortune-cowsay-api-php-fpm:8080/;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+    }
+
+    # Standard-Fallback auf index.html, falls kein Dateitreffer
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+
+    # Optional: einfache Health-Check Route
+    location = /health {
+        return 200 'OK';
+        add_header Content-Type text/plain;
+    }
+}

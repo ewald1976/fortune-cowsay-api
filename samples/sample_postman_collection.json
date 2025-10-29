@@ -1,0 +1,77 @@
+{
+  "info": {
+    "name": "Fortune Cowsay API (Local)",
+    "description": "Postman Collection zum Testen der lokalen Fortune Cowsay API unter http://localhost:8080",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Health Check",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:8080/api/health",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8080",
+          "path": ["api", "health"]
+        }
+      }
+    },
+    {
+      "name": "Get Categories",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:8080/api/categories",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8080",
+          "path": ["api", "categories"]
+        }
+      }
+    },
+    {
+      "name": "Random Quote (POST)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"mode\": \"cowsay\",\n  \"text\": \"Moo!\"\n}"
+        },
+        "url": {
+          "raw": "http://localhost:8080/api/quote",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8080",
+          "path": ["api", "quote"]
+        }
+      }
+    },
+    {
+      "name": "Fortune by Category (POST)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"mode\": \"fortunes\",\n  \"cat\": \"literature\"\n}"
+        },
+        "url": {
+          "raw": "http://localhost:8080/api/quote",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8080",
+          "path": ["api", "quote"]
+        }
+      }
+    }
+  ]
+}
