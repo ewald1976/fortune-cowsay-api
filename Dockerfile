@@ -31,4 +31,5 @@ COPY nginx/default.conf /etc/nginx/conf.d/default.conf
 COPY nginx/supervisord.conf /etc/supervisor/supervisord.conf
 
 EXPOSE 8080
-CMD [\"/usr/bin/supervisord\", \"-c\", \"/etc/supervisor/supervisord.conf\"]
+CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/supervisord.conf"]
+
