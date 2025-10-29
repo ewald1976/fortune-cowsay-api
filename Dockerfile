@@ -14,6 +14,9 @@ ENV LANG=de_DE.UTF-8 LANGUAGE=de_DE.UTF-8 LC_ALL=de_DE.UTF-8
 WORKDIR /var/www/html
 COPY ./lumen-app/ .
 
+# 🔽 Composer installieren + Dependencies auflösen
+RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
+RUN composer install --no-dev --optimize-autoloader
 # Swagger / OpenAPI
 COPY openapi.yaml /var/www/html/public/openapi.yaml
 COPY swagger/index.html /var/www/html/public/docs/index.html
