@@ -9,7 +9,7 @@
 
 ```
 # Repository klonen
-git clone https://github.com/<dein-repo>/fortune-cowsay-api.git
+git clone https://github.com/ewald1976/fortune-cowsay-api.git
 cd fortune-cowsay-api
 
 # Docker-Container bauen und starten
