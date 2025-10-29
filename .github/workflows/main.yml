@@ -28,7 +28,7 @@ jobs:
 
       - name: Run container for tests
         run: |
-          docker run -d --rm -p 8080:8080 --name fortune-api-test fortune-cowsay-api:test
+          docker run -d --rm -p 8080:8080 --name fortune-api-test fortune-cowsay-api:test php -S 0.0.0.0:8080 -t public
           echo "Waiting for container to start..."
           for i in {1..10}; do
             if curl -fs http://localhost:8080/api/health >/dev/null 2>&1; then
