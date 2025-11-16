@@ -1,4 +1,4 @@
-name: Build, Test & Publish Docker Image
+name: Build, Test & Publish Docker Image (Python)
 
 on:
   push:
@@ -10,6 +10,7 @@ on:
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -23,20 +24,25 @@ jobs:
           context: .
           file: ./Dockerfile
           platforms: linux/amd64
-          load: true         # lädt lokal statt push
-          tags: fortune-cowsay-api:test
+          load: true               # Image lokal im Runner laden
+          tags: fortune-cowsay-python:test
 
       - name: Run container for tests
         run: |
-          docker run -d --rm -p 8080:8080 --name fortune-api-test fortune-cowsay-api:test php -S 0.0.0.0:8080 -t public
+          docker run -d --rm \
+            -p 8000:8000 \
+            --name fortune-api-test \
+            fortune-cowsay-python:test
+
           echo "Waiting for container to start..."
           for i in {1..10}; do
-            if curl -fs http://localhost:8080/api/health >/dev/null 2>&1; then
+            if curl -fs http://localhost:8000/api/health >/dev/null 2>&1; then
               echo "✅ API is healthy!"
               exit 0
             fi
             sleep 3
           done
+
           echo "❌ API healthcheck failed"
           docker logs fortune-api-test
           exit 1
@@ -48,6 +54,7 @@ jobs:
   push-to-dockerhub:
     needs: build-and-test
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -69,8 +76,8 @@ jobs:
           push: true
           platforms: linux/amd64,linux/arm64
           tags: |
-            ${{ secrets.DOCKERHUB_USERNAME }}/fortune-cowsay-api:latest
-            ${{ secrets.DOCKERHUB_USERNAME }}/fortune-cowsay-api:${{ github.ref_name }}
+            ${{ secrets.DOCKERHUB_USERNAME }}/fortune-cowsay-python:latest
+            ${{ secrets.DOCKERHUB_USERNAME }}/fortune-cowsay-python:${{ github.ref_name }}
 
   release:
     needs: push-to-dockerhub
