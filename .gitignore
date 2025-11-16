@@ -1,0 +1,59 @@
+# ============================================
+#   Global Gitignore für Python + Docker + macOS
+# ============================================
+
+# --- macOS ---
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon?
+._*
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+*.egg-info/
+.eggs/
+dist/
+build/
+pip-wheel-metadata/
+
+# Virtual Environments
+venv/
+.env/
+.env*/ 
+.venv/
+.python-version
+
+# --- Logs ---
+*.log
+logs/
+*.pid
+
+# --- IDE / Editor ---
+# VSCode
+.vscode/
+.history/
+
+# JetBrains
+.idea/
+*.iml
+
+# --- Docker ---
+# Container runtime artifacts
+docker-compose.override.yml
+.docker/
+.dockerignore
+
+# --- Node (falls du später UI mit reinziehst) ---
+node_modules/
+npm-debug.log*
+yarn-error.log
+
+# --- Misc ---
+*.swp
+*.swo
+Thumbs.db
